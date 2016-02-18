@@ -1,0 +1,104 @@
+package vacuumagentproject;
+
+
+import java.util.ArrayList;
+
+/**
+ * Created by bHodges on 2/3/16.
+ */
+public class BehReflexAgent extends VacuumAgent{
+
+    final int MAXDIM = 501;
+    int[][] visitCount = new int[MAXDIM][MAXDIM];
+    boolean[][] isObstacle = new boolean[MAXDIM][MAXDIM];
+    ArrayList<VacuumAction> actionList = new ArrayList();
+    //final int OFFSET = 1;
+    int oldRow, oldCol, count;
+
+    BehReflexAgent(){
+        oldRow = 0;
+        oldCol = 0;
+        count = 0;
+        initArrs();
+    }//constructor
+
+    private void initArrs(){
+        for (int i = 0; i<MAXDIM; i++){
+            for (int j = 0; j< MAXDIM; j++){
+                visitCount[i][j] = 0;
+                isObstacle[i][j] = false;
+            }
+        }
+    }
+
+    public VacuumAction getAction(VacuumPercept percept){
+        if (percept instanceof VacuumLocPercept)
+            return getActionLocReflex((VacuumLocPercept)percept);
+        else
+            return VacuumAction.STOP;
+    }
+    /**
+     *
+     * @param percept -- a location percept
+     * @return VacuumAction.SUCK if current location is dirty else returns a random move
+     */
+    private VacuumAction getActionLocReflex(VacuumLocPercept percept) {
+        VacuumAction action = null;
+        //VacuumAction lastAction = null;
+        int row = percept.getRow();
+        int col = percept.getCol();
+        if (percept.dirtSensor() == Status.DIRTY){
+            System.out.println("we found dirt");
+            action = VacuumAction.SUCK;
+        }else{
+            if (row == oldRow && col == oldCol) {
+                isObstacle[row][col] = true;
+                action = actionPicker(row, col);
+                System.out.println(("Obsticle at: " + action.getRowMove() + row) + "," + (action.getColMove() + col));
+                visitCount[action.getRowMove() + row][action.getColMove() + col] += 500;
+            }else
+                action = actionPicker(row, col);
+        }
+
+
+
+        if (action != VacuumAction.SUCK){
+            //actionList.add(action);
+            oldRow = row;
+            oldCol = col;
+            //count++;
+        }
+        visitCount[row][col]++;
+        return action;
+    }
+
+    private VacuumAction actionPicker(int row, int col){
+        //set default action
+        VacuumAction action = VacuumAction.RIGHT;
+        //set default lowCount
+        //check to see if I am on a "0" boarder
+        int lowCount = visitCount[row][col+1];
+
+        //check to see if I am on a "0" boarder
+        if (row == 0){
+            action = VacuumAction.RIGHT;
+        }else if (col == 0){
+            action = VacuumAction.BACK;
+        }else{
+            //check surrounding squares for lowest
+            if (visitCount[row+1][col]<lowCount){
+                lowCount = visitCount[row+1][col];
+                action = VacuumAction.BACK;
+            }
+            if (visitCount[row][col-1] < lowCount){
+                lowCount = visitCount[row][col-1];
+                action = VacuumAction.LEFT;
+            }
+            if (visitCount[row-1][col] < lowCount){
+                lowCount = visitCount[row-1][col];
+                action = VacuumAction.FORWARD;
+            }
+        }
+
+        return action;
+    }
